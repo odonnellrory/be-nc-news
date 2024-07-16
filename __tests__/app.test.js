@@ -174,4 +174,85 @@ describe("GET /api/articles/:article_id/comments", () => {
         expect(body.comments).toBeSortedBy("created_at", { descending: true });
       });
   });
+
+  test("404: responds with not found for non-existent article_id", () => {
+    return request(app)
+      .get("/api/articles/99999999/comments")
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Article Not Found");
+      });
+  });
+
+  test("400: responds with bad request for invalid article_id", () => {
+    return request(app)
+      .get("/api/articles/iamnotanarticleid/comments")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+});
+
+describe("POST /api/articles/:article_id/comments", () => {
+  test("201: adds a new comment to an article and responds with the posted comment", () => {
+    const newComment = {
+      username: "butter_bridge",
+      body: "This is a test comment",
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(newComment)
+      .then(({ body }) => {
+        expect(body.comment).toMatchObject({
+          body: "This is a test comment",
+          votes: 0,
+          author: "butter_bridge",
+          article_id: 1,
+          comment_id: expect.any(Number),
+          created_at: expect.any(String),
+        });
+      });
+  });
+
+  test("404: responds with not found for non-existent article_id", () => {
+    const newComment = {
+      username: "butter_bridge",
+      body: "This is a test comment",
+    };
+    return request(app)
+      .post("/api/articles/99999999/comments")
+      .send(newComment)
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Article Not Found");
+      });
+  });
+
+  test("400: responds with bad request for invalid article_id", () => {
+    const newComment = {
+      username: "butter_bridge",
+      body: "This is a test comment",
+    };
+    return request(app)
+      .post("/api/articles/iamnotanarticleid/comments")
+      .send(newComment)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("404: responds with not found for non-existent username", () => {
+    const newComment = {
+      username: "iamnotauser",
+      body: "This is a test comment",
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(newComment)
+      .then(({ body }) => {
+        expect(body.msg).toBe("User Not Found");
+      });
+  });
 });
