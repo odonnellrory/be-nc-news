@@ -3,6 +3,7 @@ const {
   fetchAllArticles,
   fetchCommentsByArticleId,
   insertComment,
+  updateArticleVotes,
 } = require("../models/articles.model");
 
 exports.getArticleById = (req, res, next) => {
@@ -46,6 +47,19 @@ exports.postComment = (req, res, next) => {
   insertComment(article_id, username, body)
     .then((comment) => {
       res.status(201).send({ comment });
+    })
+    .catch(next);
+};
+
+exports.patchArticleVotes = (req, res, next) => {
+  const { article_id } = req.params;
+  const { inc_votes } = req.body;
+  if (inc_votes === undefined) {
+    return next({ status: 400, msg: "Bad Request" });
+  }
+  updateArticleVotes(article_id, inc_votes)
+    .then((article) => {
+      res.status(200).send({ article });
     })
     .catch(next);
 };
