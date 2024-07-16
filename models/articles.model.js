@@ -56,3 +56,26 @@ exports.fetchAllArticles = () => {
       }));
     });
 };
+
+exports.fetchCommentsByArticleId = (article_id) => {
+  return db
+    .query(
+      `
+    SELECT
+      comment_id, 
+      body, 
+      votes, 
+      author, 
+      article_id,
+      created_at
+    FROM
+      comments
+    WHERE
+      article_id = $1
+    ORDER BY
+      created_at DESC
+    `,
+      [article_id]
+    )
+    .then(({ rows }) => rows);
+};
