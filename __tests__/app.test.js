@@ -255,4 +255,144 @@ describe("POST /api/articles/:article_id/comments", () => {
         expect(body.msg).toBe("User Not Found");
       });
   });
+
+  test("201: ignores unnecessary properties", () => {
+    const newComment = {
+      username: "butter_bridge",
+      body: "This is a test comment",
+      isKevCool: true,
+    };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(newComment)
+      .expect(201)
+      .then(({ body }) => {
+        expect(body.comment).not.toHaveProperty("isKevCool");
+      });
+  });
+
+  test("400: responds with a bad request for missing required fields", () => {
+    const invalidComment = { body: "This comment has no username" };
+    return request(app)
+      .post("/api/articles/1/comments")
+      .send(invalidComment)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+});
+
+describe("PATCH /api/articles/:article_id", () => {
+  test("200: updates votes and responds with the updated article", () => {
+    const updateVotes = { inc_votes: 1 };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(updateVotes)
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.article).toMatchObject({
+          article_id: 1,
+          title: expect.any(String),
+          topic: expect.any(String),
+          author: expect.any(String),
+          body: expect.any(String),
+          created_at: expect.any(String),
+          votes: expect.any(Number),
+          article_img_url: expect.any(String),
+        });
+        expect(body.article.votes).toBe(101);
+      });
+  });
+
+  test("200: decreases votes and responds with the updated article", () => {
+    const updateVotes = { inc_votes: -100 };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(updateVotes)
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.article.votes).toBe(0);
+      });
+  });
+
+  test("400: responds with bad request for invalid inc_votes value", () => {
+    const updateVotes = { inc_votes: "i am not a valid vote" };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(updateVotes)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("400: responds with bad request for missing inc_votes key", () => {
+    const updateVotes = {};
+    return request(app)
+      .patch("/api/articles/1")
+      .send(updateVotes)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("404: responds with not found for non-existent article_id", () => {
+    const updateVotes = { inc_votes: 1 };
+    return request(app)
+      .patch("/api/articles/99999999")
+      .send(updateVotes)
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Article Not Found");
+      });
+  });
+
+  test("400: responds with bad request for invalid article_id", () => {
+    const updateVotes = { inc_votes: 1 };
+    return request(app)
+      .patch("/api/articles/iamnotavalidarticle")
+      .send(updateVotes)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("200: ignores unnecessary properties", () => {
+    const updateVotes = {
+      inc_votes: 1,
+      beans: "on toast",
+    };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(updateVotes)
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.article).toMatchObject({
+          article_id: 1,
+          title: expect.any(String),
+          topic: expect.any(String),
+          author: expect.any(String),
+          body: expect.any(String),
+          created_at: expect.any(String),
+          votes: expect.any(Number),
+          article_img_url: expect.any(String),
+        });
+        expect(body.article.votes).toBe(101);
+        expect(body.article).not.toHaveProperty("beans");
+      });
+  });
+
+  test("200: article is unchanged if given inc_votes 0", () => {
+    const updateVotes = { inc_votes: 0 };
+    return request(app)
+      .patch("/api/articles/1")
+      .send(updateVotes)
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.article.votes).toBe(100);
+      });
+  });
 });
