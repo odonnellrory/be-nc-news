@@ -118,3 +118,60 @@ describe("GET /api/articles", () => {
       });
   });
 });
+
+describe("GET /api/articles/:article_id/comments", () => {
+  test("200: responds with an array of comments for a given article_id", () => {
+    return request(app)
+      .get("/api/articles/1/comments")
+      .expect(200)
+      .then(({ body }) => {
+        expect(Array.isArray(body.comments)).toBe(true);
+        expect(body.comments.length).toBe(11);
+        body.comments.forEach((each) => {
+          expect(each).toMatchObject({
+            comment_id: expect.any(Number),
+            votes: expect.any(Number),
+            created_at: expect.any(String),
+            author: expect.any(String),
+            body: expect.any(String),
+            article_id: 1,
+          });
+        });
+      });
+  });
+
+  test("200: responds with the correct comments for article_id 9", () => {
+    return request(app)
+      .get("/api/articles/9/comments")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.comments).toHaveLength(2);
+        expect(body.comments[0]).toEqual({
+          body: "Oh, I've got compassion running out of my nose, pal! I'm the Sultan of Sentiment!",
+          votes: 16,
+          author: "butter_bridge",
+          article_id: 9,
+          comment_id: expect.any(Number),
+          created_at: expect.any(String),
+        });
+      });
+  });
+
+  test("200: responds with an empty array for a valid article_id that has no comments", () => {
+    return request(app)
+      .get("/api/articles/2/comments")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.comments).toEqual([]);
+      });
+  });
+
+  test("200: comments are sorted by date in descending order", () => {
+    return request(app)
+      .get("/api/articles/1/comments")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.comments).toBeSortedBy("created_at", { descending: true });
+      });
+  });
+});
