@@ -9,6 +9,7 @@ const {
   patchArticleVotes,
 } = require("./controllers/articles.controller");
 const { deleteComment } = require("./controllers/comments.controller");
+const { getAllUsers } = require("./controllers/users.controller");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.get("/api", getApi);
 app.get("/api/articles", getAllArticles);
 app.get("/api/articles/:article_id", getArticleById);
 app.get("/api/articles/:article_id/comments", getCommentsByArticleId);
+app.get("/api/users", getAllUsers);
 
 app.post("/api/articles/:article_id/comments", postComment);
 
