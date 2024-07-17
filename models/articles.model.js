@@ -21,10 +21,26 @@ exports.fetchArticleById = (article_id) => {
     });
 };
 
-exports.fetchAllArticles = () => {
-  return db
-    .query(
-      `
+exports.fetchAllArticles = (sort_by = "created_at", order = "desc") => {
+  const validColumns = [
+    "author",
+    "title",
+    "article_id",
+    "topic",
+    "created_at",
+    "votes",
+    "comment_count",
+  ];
+  const validOrders = ["asc", "desc"];
+
+  if (!validColumns.includes(sort_by.toLowerCase())) {
+    return Promise.reject({ status: 400, msg: "Bad Request" });
+  }
+  if (!validOrders.includes(order.toLowerCase())) {
+    return Promise.reject({ status: 400, msg: "Bad Request" });
+  }
+
+  let queryStr = `
         SELECT
             articles.author,
             title,
@@ -46,15 +62,15 @@ exports.fetchAllArticles = () => {
         GROUP BY
             articles.article_id
         ORDER BY
-            articles.created_at DESC;
-        `
-    )
-    .then(({ rows }) => {
-      return rows.map((article) => ({
-        ...article,
-        comment_count: parseInt(article.comment_count),
-      }));
-    });
+            ${sort_by} ${order}
+        `;
+
+  return db.query(queryStr).then(({ rows }) => {
+    return rows.map((article) => ({
+      ...article,
+      comment_count: parseInt(article.comment_count),
+    }));
+  });
 };
 
 exports.fetchCommentsByArticleId = (article_id) => {
