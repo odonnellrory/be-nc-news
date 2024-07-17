@@ -396,3 +396,55 @@ describe("PATCH /api/articles/:article_id", () => {
       });
   });
 });
+
+describe("DELETE /api/comments:comment_id", () => {
+  test("204: deletes the given comment and responds with no content", () => {
+    return request(app)
+      .delete("/api/comments/1")
+      .expect(204)
+      .then((response) => {
+        expect(response.body).toEqual({});
+      });
+  });
+
+  test("404: responds with not found for non-existent comment_id", () => {
+    return request(app)
+      .delete("/api/comments/99999999")
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Comment Not Found");
+      });
+  });
+
+  test("400: responds Bad Request if PSQL gets numeric overflow error (22003)", () => {
+    return request(app)
+      .delete("/api/comments/999999999999999999999999999999999999999999999999")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("400: responds with bad request for invalid comment_id", () => {
+    return request(app)
+      .delete("/api/comments/iamnotacommentpleasedontdeletemenooo")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("404: responds with not found when trying to delete an already deleted comment", () => {
+    return request(app)
+      .delete("/api/comments/1")
+      .expect(204)
+      .then(() => {
+        return request(app)
+          .delete("/api/comments/1")
+          .expect(404)
+          .then(({ body }) => {
+            expect(body.msg).toBe("Comment Not Found");
+          });
+      });
+  });
+});

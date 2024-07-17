@@ -8,6 +8,7 @@ const {
   postComment,
   patchArticleVotes,
 } = require("./controllers/articles.controller");
+const { deleteComment } = require("./controllers/comments.controller");
 
 const app = express();
 
@@ -23,12 +24,14 @@ app.post("/api/articles/:article_id/comments", postComment);
 
 app.patch("/api/articles/:article_id", patchArticleVotes);
 
+app.delete("/api/comments/:comment_id", deleteComment);
+
 app.use((req, res, next) => {
   res.status(404).send({ msg: "Path Not Found" });
 });
 
 app.use((err, req, res, next) => {
-  if (err.code === "22P02") {
+  if (err.code === "22P02" || err.code === "22003") {
     res.status(400).send({ msg: "Bad Request" });
   } else if (err.status && err.msg) {
     res.status(err.status).send({ msg: err.msg });
