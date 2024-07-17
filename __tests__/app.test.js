@@ -467,3 +467,41 @@ describe("GET /api/users", () => {
       });
   });
 });
+
+describe("GET /api/articles (sorting)", () => {
+  test("200: sorts articles by specific column in ascending order", () => {
+    return request(app)
+      .get("/api/articles?sort_by=title&order=asc")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles).toBeSortedBy("title", { ascending: true });
+      });
+  });
+
+  test("200: sorts articles by votes in descending order", () => {
+    return request(app)
+      .get("/api/articles?sort_by=votes")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles).toBeSortedBy("votes", { descending: true });
+      });
+  });
+
+  test("400: responds with bad request for invalid sort_by column", () => {
+    return request(app)
+      .get("/api/articles?sort_by=iamnotavalidsortbyokay")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("400: responds with bad request for invalid ordr value", () => {
+    return request(app)
+      .get("/api/articles?order=iamnotavalidorder")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+});
