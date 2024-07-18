@@ -474,7 +474,7 @@ describe("GET /api/articles (sorting)", () => {
       .get("/api/articles?sort_by=title&order=asc")
       .expect(200)
       .then(({ body }) => {
-        expect(body.articles).toBeSortedBy("title", { ascending: true });
+        expect(body.articles).toBeSortedBy("title", { descending: false });
       });
   });
 
@@ -502,6 +502,51 @@ describe("GET /api/articles (sorting)", () => {
       .expect(400)
       .then(({ body }) => {
         expect(body.msg).toBe("Bad Request");
+      });
+  });
+});
+
+describe("GET /api/articles (topic filtering)", () => {
+  test("200: filters articles by the specified topic", () => {
+    return request(app)
+      .get("/api/articles?topic=mitch")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles.length).toBe(12);
+        body.articles.forEach((article) => {
+          expect(article.topic).toBe("mitch");
+        });
+      });
+  });
+
+  test("200: returns an empty array when filtered by topic with no articles", () => {
+    return request(app)
+      .get("/api/articles?topic=paper")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles).toEqual([]);
+      });
+  });
+
+  test("200: filters by topic and sort by title in ascending order", () => {
+    return request(app)
+      .get("/api/articles?topic=mitch&sort_by=title&order=asc")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles.length).toBe(12);
+        body.articles.forEach((article) => {
+          expect(article.topic).toBe("mitch");
+        });
+        expect(body.articles).toBeSortedBy("title", { descending: false });
+      });
+  });
+
+  test("404: responds with not found for non-existent topic", () => {
+    return request(app)
+      .get("/api/articles?topic=iamnotavalidtopic")
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Topic Not Found");
       });
   });
 });

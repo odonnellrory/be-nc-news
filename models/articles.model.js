@@ -21,7 +21,7 @@ exports.fetchArticleById = (article_id) => {
     });
 };
 
-exports.fetchAllArticles = (sort_by = "created_at", order = "desc") => {
+exports.fetchAllArticles = (sort_by = "created_at", order = "desc", topic) => {
   const validColumns = [
     "author",
     "title",
@@ -59,18 +59,42 @@ exports.fetchAllArticles = (sort_by = "created_at", order = "desc") => {
             comments
         ON
             articles.article_id = comments.article_id
+        `;
+
+  const queryParams = [];
+
+  if (topic) {
+    queryStr += " WHERE articles.topic = $1";
+    queryParams.push(topic);
+  }
+
+  queryStr += `
         GROUP BY
             articles.article_id
         ORDER BY
             ${sort_by} ${order}
         `;
 
-  return db.query(queryStr).then(({ rows }) => {
-    return rows.map((article) => ({
-      ...article,
-      comment_count: parseInt(article.comment_count),
-    }));
-  });
+  return db
+    .query(queryStr, queryParams)
+    .then(({ rows }) => {
+      if (rows.length === 0 && topic) {
+        return db.query(`SELECT * FROM topics WHERE slug = $1`, [topic]);
+      }
+      return rows;
+    })
+    .then((result) => {
+      if (Array.isArray(result)) {
+        return result.map((article) => ({
+          ...article,
+          comment_count: parseInt(article.comment_count),
+        }));
+      } else if (result.rows.length === 0) {
+        return Promise.reject({ status: 404, msg: "Topic Not Found" });
+      } else {
+        return [];
+      }
+    });
 };
 
 exports.fetchCommentsByArticleId = (article_id) => {
