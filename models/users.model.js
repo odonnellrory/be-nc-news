@@ -5,9 +5,7 @@ exports.fetchAllUsers = () => {
     .query(
       `
         SELECT
-            username,
-            name,
-            avatar_url
+            *
         FROM
             users
         `
