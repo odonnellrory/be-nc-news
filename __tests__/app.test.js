@@ -67,6 +67,16 @@ describe("GET /api/articles/:article_id", () => {
       });
   });
 
+  test("200: article response includes comment_count", () => {
+    return request(app)
+      .get("/api/articles/1")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.article).toHaveProperty("comment_count");
+        expect(typeof body.article.comment_count).toBe("number");
+      });
+  });
+
   test("404: responds with not found for non-existent article_id number", () => {
     return request(app)
       .get("/api/articles/99999")
