@@ -407,7 +407,7 @@ describe("PATCH /api/articles/:article_id", () => {
   });
 });
 
-describe("DELETE /api/comments:comment_id", () => {
+describe("DELETE /api/comments/:comment_id", () => {
   test("204: deletes the given comment and responds with no content", () => {
     return request(app)
       .delete("/api/comments/1")
@@ -582,6 +582,71 @@ describe("GET /api/users/:username", () => {
       .expect(404)
       .then(({ body }) => {
         expect(body.msg).toBe("User Not Found");
+      });
+  });
+});
+
+describe("PATCH /api/comments/:comment_id", () => {
+  test("200: increments votes and responds with the updated comment", () => {
+    const updateVotes = { inc_votes: 1 };
+    return request(app)
+      .patch("/api/comments/1")
+      .send(updateVotes)
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.comment).toMatchObject({
+          comment_id: 1,
+          body: expect.any(String),
+          votes: expect.any(Number),
+          author: expect.any(String),
+          article_id: expect.any(Number),
+          created_at: expect.any(String),
+        });
+        expect(body.comment.votes).toBe(17);
+      });
+  });
+
+  test("200: decreases votes and responds with the updated comment", () => {
+    const updateVotes = { inc_votes: -1 };
+    return request(app)
+      .patch("/api/comments/1")
+      .send(updateVotes)
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.comment.votes).toBe(15);
+      });
+  });
+
+  test("400: responds with bad request for invalid inc_votes value", () => {
+    const updateVotes = { inc_votes: "i am not a valid inc_votes value" };
+    return request(app)
+      .patch("/api/comments/1")
+      .send(updateVotes)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("400: responds with bad request for invalid comment_id", () => {
+    const updateVotes = { inc_votes: 1 };
+    return request(app)
+      .patch("/api/comments/iamnotavalidcommentid")
+      .send(updateVotes)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("404: responds with not found for non-existent comment_id", () => {
+    const updateVotes = { inc_votes: 1 };
+    return request(app)
+      .patch("/api/comments/999999")
+      .send(updateVotes)
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Comment Not Found");
       });
   });
 });
