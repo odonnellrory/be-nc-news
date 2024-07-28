@@ -103,7 +103,8 @@ describe("GET /api/articles", () => {
       .expect(200)
       .then(({ body }) => {
         expect(Array.isArray(body.articles)).toBe(true);
-        expect(body.articles.length).toBe(13);
+        expect(body.articles.length).toBe(10);
+        expect(body.total_count).toBe(13);
         body.articles.forEach((each) => {
           expect(each).toMatchObject({
             author: expect.any(String),
@@ -119,12 +120,59 @@ describe("GET /api/articles", () => {
       });
   });
 
+  test("200: returns all articles when limit is set to a large number", () => {
+    return request(app)
+      .get("/api/articles?limit=100")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles.length).toBe(13);
+        expect(body.total_count).toBe(13);
+      });
+  });
+
   test("200: articles are sorted by date in descending order", () => {
     return request(app)
       .get("/api/articles")
       .expect(200)
       .then(({ body }) => {
         expect(body.articles).toBeSortedBy("created_at", { descending: true });
+      });
+  });
+
+  test("200: accepts limit and page queries", () => {
+    return request(app)
+      .get("/api/articles?limit=5&p=2")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles).toHaveLength(5);
+        expect(body.total_count).toBeGreaterThan(5);
+      });
+  });
+
+  test("400: responds with bad request for invalid limit", () => {
+    return request(app)
+      .get("/api/articles?limit=invalid")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("400: responds with bad request for invalid page", () => {
+    return request(app)
+      .get("/api/articles?p=invalid")
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("200: returns correct page of results", () => {
+    return request(app)
+      .get("/api/articles?limit=10&p=2")
+      .expect(200)
+      .then(({ body }) => {
+        expect(body.articles[0].article_id).not.toBe(1);
       });
   });
 });
@@ -522,7 +570,8 @@ describe("GET /api/articles (topic filtering)", () => {
       .get("/api/articles?topic=mitch")
       .expect(200)
       .then(({ body }) => {
-        expect(body.articles.length).toBe(12);
+        expect(body.articles.length).toBe(10);
+        expect(body.total_count).toBe(12);
         body.articles.forEach((article) => {
           expect(article.topic).toBe("mitch");
         });
@@ -543,7 +592,8 @@ describe("GET /api/articles (topic filtering)", () => {
       .get("/api/articles?topic=mitch&sort_by=title&order=asc")
       .expect(200)
       .then(({ body }) => {
-        expect(body.articles.length).toBe(12);
+        expect(body.articles.length).toBe(10);
+        expect(body.total_count).toBe(12);
         body.articles.forEach((article) => {
           expect(article.topic).toBe("mitch");
         });
