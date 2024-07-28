@@ -650,3 +650,93 @@ describe("PATCH /api/comments/:comment_id", () => {
       });
   });
 });
+
+describe("POST /api/articles", () => {
+  test("201: adds a new article and responds with the newly added article", () => {
+    const newArticle = {
+      author: "butter_bridge",
+      title: "New Article Title",
+      body: "This is the body of the new article",
+      topic: "cats",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(newArticle)
+      .expect(201)
+      .then(({ body }) => {
+        expect(body.article).toMatchObject({
+          article_id: expect.any(Number),
+          author: "butter_bridge",
+          title: "New Article Title",
+          body: "This is the body of the new article",
+          topic: "cats",
+          article_img_url: expect.any(String),
+          votes: 0,
+          created_at: expect.any(String),
+          comment_count: 0,
+        });
+      });
+  });
+
+  test("201: adds a new article with a provided image URL", () => {
+    const newArticle = {
+      author: "butter_bridge",
+      title: "New Article Title",
+      body: "This is the body of the new article",
+      topic: "cats",
+      article_img_url: "https://avatars.githubusercontent.com/u/169919586?v=4",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(newArticle)
+      .expect(201)
+      .then(({ body }) => {
+        expect(body.article.article_img_url).toBe(
+          "https://avatars.githubusercontent.com/u/169919586?v=4"
+        );
+      });
+  });
+
+  test("400: responds with bad request for missing required fields", () => {
+    const invalidArticle = { author: "butter_bridge", title: "New Article" };
+    return request(app)
+      .post("/api/articles")
+      .send(invalidArticle)
+      .expect(400)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Bad Request");
+      });
+  });
+
+  test("404: responds with not found for non-existent author", () => {
+    const newArticle = {
+      author: "non_existent_user",
+      title: "New Article Title",
+      body: "This is the body of the new article",
+      topic: "cats",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(newArticle)
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Author Not Found");
+      });
+  });
+
+  test("404: responds with not found for non-existent topic", () => {
+    const newArticle = {
+      author: "butter_bridge",
+      title: "New Article Title",
+      body: "This is the body of the new article",
+      topic: "non_existent_topic",
+    };
+    return request(app)
+      .post("/api/articles")
+      .send(newArticle)
+      .expect(404)
+      .then(({ body }) => {
+        expect(body.msg).toBe("Topic Not Found");
+      });
+  });
+});
