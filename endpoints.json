@@ -124,5 +124,29 @@
           "created_at": "2020-04-06T12:17:00.000Z"
         }
       }
+    },
+    "POST /api/articles": {
+    "description": "adds a new article",
+    "queries": [],
+    "exampleRequest": {
+      "author": "butter_bridge",
+      "title": "New Article Title",
+      "body": "This is the body of the new article",
+      "topic": "cats",
+      "article_img_url": "https://avatars.githubusercontent.com/u/169919586?v=4"
+    },
+    "exampleResponse": {
+      "article": {
+        "article_id": 13,
+        "title": "New Article Title",
+        "topic": "cats",
+        "author": "butter_bridge",
+        "body": "This is the body of the new article",
+        "created_at": "2023-11-20T08:25:33.902Z",
+        "votes": 0,
+        "article_img_url": "https://avatars.githubusercontent.com/u/169919586?v=4",
+        "comment_count": 0
+      }
     }
+  }
   }

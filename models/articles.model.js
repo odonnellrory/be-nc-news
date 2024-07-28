@@ -204,3 +204,69 @@ exports.updateArticleVotes = (article_id, inc_votes) => {
       return rows[0];
     });
 };
+
+exports.insertArticle = (author, title, body, topic, article_img_url) => {
+  const defaultImgUrl =
+    "https://images.pexels.com/photos/97050/pexels-photo-97050.jpeg?w=700&h=700";
+
+  const queryValues = [
+    title,
+    body,
+    author,
+    topic,
+    article_img_url || defaultImgUrl,
+  ];
+
+  return db
+    .query(
+      `
+      INSERT INTO 
+        articles
+          (
+            title, 
+            body, 
+            author, 
+            topic, 
+            article_img_url
+          )
+      VALUES
+        ($1, $2, $3, $4, $5)
+      RETURNING *
+      `,
+      queryValues
+    )
+    .then(({ rows }) => {
+      const article = rows[0];
+      return db.query(
+        `
+        SELECT 
+          articles.*, 
+        COUNT(comments.comment_id)::INT AS 
+          comment_count
+        FROM 
+          articles
+        LEFT JOIN 
+          comments 
+        ON 
+          articles.article_id = comments.article_id
+        WHERE 
+          articles.article_id = $1
+        GROUP BY 
+          articles.article_id
+        `,
+        [article.article_id]
+      );
+    })
+    .then(({ rows }) => rows[0])
+    .catch((err) => {
+      if (err.code === "23503") {
+        if (err.constraint === "articles_author_fkey") {
+          return Promise.reject({ status: 404, msg: "Author Not Found" });
+        }
+        if (err.constraint === "articles_topic_fkey") {
+          return Promise.reject({ status: 404, msg: "Topic Not Found" });
+        }
+      }
+      return Promise.reject(err);
+    });
+};
