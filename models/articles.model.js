@@ -30,7 +30,13 @@ exports.fetchArticleById = (article_id) => {
     });
 };
 
-exports.fetchAllArticles = (sort_by = "created_at", order = "desc", topic) => {
+exports.fetchAllArticles = async (
+  sort_by = "created_at",
+  order = "desc",
+  topic,
+  limit = 10,
+  offset = 0
+) => {
   const validColumns = [
     "author",
     "title",
@@ -50,25 +56,23 @@ exports.fetchAllArticles = (sort_by = "created_at", order = "desc", topic) => {
   }
 
   let queryStr = `
-        SELECT
-            articles.author,
-            title,
-            articles.article_id,
-            topic,
-            articles.created_at,
-            articles.votes,
-            article_img_url,
-        COUNT
-            (comments.comment_id)
-        AS
-            comment_count
-        FROM
-            articles
-        LEFT JOIN
-            comments
-        ON
-            articles.article_id = comments.article_id
-        `;
+    SELECT
+      articles.article_id,
+      articles.title,
+      articles.topic,
+      articles.author,
+      articles.created_at,
+      articles.votes,
+      articles.article_img_url,
+    COUNT(comments.comment_id)::INT AS 
+      comment_count
+    FROM
+      articles
+    LEFT JOIN
+      comments 
+    ON 
+      articles.article_id = comments.article_id
+  `;
 
   const queryParams = [];
 
@@ -82,28 +86,45 @@ exports.fetchAllArticles = (sort_by = "created_at", order = "desc", topic) => {
             articles.article_id
         ORDER BY
             ${sort_by} ${order}
+        LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
         `;
+  queryParams.push(limit, offset);
 
-  return db
-    .query(queryStr, queryParams)
-    .then(({ rows }) => {
-      if (rows.length === 0 && topic) {
-        return db.query(`SELECT * FROM topics WHERE slug = $1`, [topic]);
-      }
-      return rows;
-    })
-    .then((result) => {
-      if (Array.isArray(result)) {
-        return result.map((article) => ({
-          ...article,
-          comment_count: parseInt(article.comment_count),
-        }));
-      } else if (result.rows.length === 0) {
+  const articlesPromise = db.query(queryStr, queryParams);
+
+  let countQueryStr = `SELECT COUNT(*) FROM articles`;
+  if (topic) {
+    countQueryStr += " WHERE topic = $1";
+  }
+
+  const countPromise = db.query(countQueryStr, topic ? [topic] : []);
+
+  try {
+    const [articlesResult, countResult] = await Promise.all([
+      articlesPromise,
+      countPromise,
+    ]);
+
+    if (articlesResult.rows.length === 0 && topic) {
+      const topicCheck = await db.query(
+        "SELECT * FROM topics WHERE slug = $1",
+        [topic]
+      );
+      if (topicCheck.rows.length === 0) {
         return Promise.reject({ status: 404, msg: "Topic Not Found" });
-      } else {
-        return [];
       }
-    });
+    }
+
+    return {
+      articles: articlesResult.rows.map((article) => ({
+        ...article,
+        comment_count: parseInt(article.comment_count),
+      })),
+      total_count: parseInt(countResult.rows[0].count),
+    };
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
 
 exports.fetchCommentsByArticleId = (article_id) => {

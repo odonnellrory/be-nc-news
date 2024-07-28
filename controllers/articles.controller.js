@@ -17,10 +17,13 @@ exports.getArticleById = (req, res, next) => {
 };
 
 exports.getAllArticles = (req, res, next) => {
-  const { sort_by, order, topic } = req.query;
-  fetchAllArticles(sort_by, order, topic)
-    .then((articles) => {
-      res.status(200).send({ articles });
+  const { sort_by, order, topic, limit = 10, p = 1 } = req.query;
+
+  const offset = (p - 1) * limit;
+
+  fetchAllArticles(sort_by, order, topic, limit, offset)
+    .then(({ articles, total_count }) => {
+      res.status(200).send({ articles, total_count });
     })
     .catch(next);
 };
